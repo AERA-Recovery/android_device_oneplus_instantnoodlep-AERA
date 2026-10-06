@@ -116,6 +116,8 @@ bool PrepareMixer() {
     return false;
   }
   const bool ready =
+      SetMixerEnum(card, "TERT_MI2S_RX Channels", "Two") &&
+      SetMixerEnum(card, "TERT_MI2S_RX Format", "S24_LE") &&
       SetMixerValue(card, "TERT_MI2S_RX Audio Mixer MultiMedia1", 1) &&
       SetMixerValue(card, "TFA_CHIP_SELECTOR", 3) &&
       SetMixerEnum(card, "stereo Profile", "speaker");
