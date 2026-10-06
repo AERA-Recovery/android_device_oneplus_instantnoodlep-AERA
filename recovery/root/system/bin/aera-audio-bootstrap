@@ -1,0 +1,76 @@
+#!/system/bin/sh
+# Copyright (C) 2026 AERA Recovery Project contributors
+# SPDX-License-Identifier: Apache-2.0
+
+PATH=/system/bin:/sbin
+export PATH
+
+fail() {
+    echo "AERA audio: $*" >&2
+    exit 1
+}
+
+case "$(getprop ro.product.device)" in
+    instantnoodlep|OnePlus8Pro|IN2020|IN2021|IN2023|IN2025) ;;
+    *)
+        case "$(getprop ro.product.vendor.device)" in
+            instantnoodlep|OnePlus8Pro|IN2020|IN2021|IN2023|IN2025) ;;
+            *) fail "this backend is only valid on OnePlus 8 Pro" ;;
+        esac
+        ;;
+esac
+
+if [ "$(getprop sys.aera.audio.ready)" = "1" ] && [ -e /dev/snd/controlC0 ]; then
+    exit 0
+fi
+
+lock=/tmp/aera-audio-bootstrap.lock
+if ! mkdir "${lock}" 2>/dev/null; then
+    attempt=0
+    while [ "$(getprop sys.aera.audio.ready)" != "1" ] && [ "${attempt}" -lt 300 ]; do
+        attempt=$((attempt + 1))
+        sleep 0.1
+    done
+    [ "$(getprop sys.aera.audio.ready)" = "1" ] || \
+        fail "another audio bootstrap did not complete"
+    exit 0
+fi
+trap 'rmdir "${lock}" 2>/dev/null' EXIT
+
+if [ ! -e /dev/snd/controlC0 ]; then
+    if [ "$(getprop init.svc.aera-pd-mapper)" != "running" ]; then
+        setprop ctl.start aera-pd-mapper
+        attempt=0
+        while [ "$(getprop init.svc.aera-pd-mapper)" != "running" ] && \
+              [ "${attempt}" -lt 50 ]; do
+            attempt=$((attempt + 1))
+            sleep 0.1
+        done
+    fi
+    [ "$(getprop init.svc.aera-pd-mapper)" = "running" ] || \
+        fail "the Qualcomm PD mapper did not start"
+
+    attempt=0
+    while [ ! -e /sys/kernel/boot_adsp/boot ] && [ "${attempt}" -lt 100 ]; do
+        attempt=$((attempt + 1))
+        sleep 0.1
+    done
+    [ -e /sys/kernel/boot_adsp/boot ] || fail "the ADSP boot control is unavailable"
+
+    # The downstream Kona loader expects the literal unsigned value "1u".
+    echo 1u > /sys/kernel/boot_adsp/boot || fail "could not start the ADSP"
+
+    attempt=0
+    while [ ! -e /dev/snd/controlC0 ] && [ "${attempt}" -lt 300 ]; do
+        attempt=$((attempt + 1))
+        sleep 0.1
+    done
+fi
+[ -e /dev/snd/controlC0 ] || fail "the Kona sound card did not register"
+
+# OxygenOS selects the device-specific ODM route: MultiMedia1 feeds the
+# tertiary MI2S speaker interface and the TFA stereo codec owns both speakers.
+/system/bin/aera-audio-bridge --prepare || fail "could not configure the speaker route"
+
+setprop sys.aera.audio.ready 1
+echo "AERA audio: Kona TinyALSA backend is ready"

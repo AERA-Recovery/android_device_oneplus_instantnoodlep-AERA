@@ -1,0 +1,12 @@
+# AERA WLAN for QCA6390 (kona / instantnoodlep). Firmware and cold-boot
+# calibration are prepared asynchronously before the post-decrypt module load.
+on property:sys.aera.wlan.up=1
+    mkdir /tmp/recovery 0777
+    mkdir /tmp/recovery/sockets 0777
+
+    start wpa_supplicant
+    setprop sys.aera.wlan.up 0
+
+service wpa_supplicant /system/bin/sh /system/bin/aera-wpa-supplicant.sh
+    disabled
+    seclabel u:r:recovery:s0

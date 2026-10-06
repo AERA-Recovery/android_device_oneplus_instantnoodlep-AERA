@@ -26,6 +26,7 @@
 #
 
 import /init.recovery.qcom_decrypt.rc
+import /init.recovery.wifi.rc
 	
 service hal_cryptoeng_oplus /system/bin/hw/vendor.oplus.hardware.cryptoeng@1.0-service
     class late_start
@@ -47,10 +48,74 @@ service make-fake-partitions-service /system/bin/make-fake-partitions-service.sh
     oneshot
     seclabel u:r:recovery:s0
 
+service vendor.qrtr-ns /system/bin/qrtr-ns -f
+    class core
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
+service cnss-daemon /vendor/bin/cnss-daemon -n -l
+    class core
+    user root
+    group root system inet net_admin wifi
+    disabled
+    seclabel u:r:recovery:s0
+
+service aera-wlan-prepare /system/bin/sh /system/bin/aera-wlan-prepare.sh
+    class core
+    user root
+    group root
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0
+
+service aera-wlan-load /system/bin/sh /system/bin/aera-wlan-prepare.sh load
+    class core
+    user root
+    group root
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0
+
+service aera-pd-mapper /vendor/bin/aera-pd-mapper
+    class core
+    user system
+    group system
+    disabled
+    seclabel u:r:recovery:s0
+    setenv LD_LIBRARY_PATH /vendor/lib64:/system/lib64
+
+service aera-audio-prepare /system/bin/aera-audio-bootstrap
+    class core
+    user root
+    group root audio
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0
+
+on property:sys.aera.cnss.data_ready=1
+    start cnss-daemon
+    chmod 0222 /sys/devices/platform/soc/b0000000.qcom,cnss-qca6390/fs_ready
+    write /sys/devices/platform/soc/b0000000.qcom,cnss-qca6390/fs_ready 1
+
+on property:post.decrypt.modules=true
+    start aera-wlan-load
+    start aera-audio-prepare
+
+on property:twrp.modules.loaded=true
+    start aera-audio-prepare
+
+on property:sys.powerctl=*
+    stop cnss-daemon
+    rm /data/vendor/wifi/sockets/cnss_user_server
+    rm /data/vendor/wifi/sockets/cnss_user_client
 
 on init
-    write /sys/class/backlight/panel0-backlight/brightness 200
-    start boot-hal-1-1
+    write /sys/class/backlight/panel0-backlight/brightness 420
+    start vendor.qrtr-ns
+    start aera-wlan-prepare
+    setprop prepdecrypt.setpatch true
     setprop sys.usb.config adb
     # Create location for fs_mgr to store abbreviated output from filesystem
     # checker programs.
@@ -58,6 +123,9 @@ on init
 
 on boot
     setprop sys.usb.config adb
+    # Kona's bootctrl implementation exposes HIDL 1.1. Starting the matching
+    # wrapper here prevents recovery from waiting on the incompatible 1.2 HAL.
+    start boot-hal-1-1
     chmod 0777 /system/bin/unified-script.sh
     start unified-script
     chmod 0777 /system/bin/make-fake-partitions-service.sh
@@ -66,6 +134,17 @@ on boot
 on fs
     wait /dev/block/platform/soc/${ro.boot.bootdevice}
     symlink /dev/block/platform/soc/${ro.boot.bootdevice} /dev/block/bootdevice
+
+    # Make the stock WLAN firmware and calibration paths available before the
+    # post-decrypt module is loaded.
+    mkdir /mnt/vendor/persist 0755
+    mount ext4 /dev/block/bootdevice/by-name/persist /mnt/vendor/persist ro
+    mkdir /vendor/firmware_mnt 0755
+    mount vfat /dev/block/bootdevice/by-name/modem${ro.boot.slot_suffix} /vendor/firmware_mnt ro
+
+    # Match stock init: IPA must be initialized before the QCA6390 host
+    # driver performs its SMMU setup during the post-decrypt module load.
+    write /dev/ipa 1
 
     # This must be under on fs, otherwise update_engine wont map the partitions and exit installation
     symlink /dev/block/bootdevice/by-name/mdm_oem_stanvbk /dev/block/bootdevice/by-name/mdm_oem_stanvbk_a

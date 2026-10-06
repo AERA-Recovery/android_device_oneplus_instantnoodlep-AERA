@@ -1,43 +1,29 @@
-# Device Tree for 8/Pro (instantnoodle) for TWRP
+# AERA Recovery bring-up for OnePlus 8 Pro
 
-Make a directory named local_manifest under .repo, and create a new manifest file, for example instantnoodle.xml
-and then paste the following
+Device: OnePlus 8 Pro (`instantnoodlep`, IN2020/IN2021/IN2023/IN2025)
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<manifest>
-<remote name="github"
-	fetch="https://github.com/" />
+This local bring-up is based on TeamWin's Android 13 OnePlus 8/8 Pro recovery
+tree. It keeps the OxygenOS 13 F.13 kernel, DTB/DTBO, Keymaster, Gatekeeper,
+CryptoEng, vibrator, and boot-control components while adapting the product to
+AERA 16.
 
-<project path="device/oneplus/instantnoodle"
-	name="infectedmushi/twrp_device_oneplus_instantnoodle"
-	remote="github"
-	revision="android-13" />
-</manifest>
-```
-Sync the sources with
+## Build
 
-```
-repo sync
+```bash
+cd /home/daniel/android/AERA_16.0
+export AERA_BUILD_DEVICE=instantnoodlep
+source build/envsetup.sh
+lunch twrp_instantnoodlep-bp2a-eng
+mka -j26 adbd recoveryimage
 ```
 
-To build, execute these commands in order
+The first image is a bring-up build. Boot it temporarily before flashing:
 
-```
-. build/envsetup.sh
-export ALLOW_MISSING_DEPENDENCIES=true
-export LC_ALL=C
-lunch twrp_instantnoodle-eng
-make -j16 adbd recoveryimage
+```bash
+fastboot boot out/target/product/instantnoodlep/AERA-*.img
 ```
 
-To test it:
-
-```
-# To temporarily boot it
-fastboot boot out/target/product/instantnoodle/recovery.img 
-
-# Since 8 / Pro has a seperate recovery partition, you can flash the recovery with
-fastboot flash recovery recovery.img
-```
-
+Validate display, touch, ADB, slot reporting, storage decryption, MTP,
+fastbootd, sideload, brightness, and reboot targets in that order. WLAN, audio,
+and hardware rendering require device-side verification and may need matching
+firmware or module work for the installed ROM.
