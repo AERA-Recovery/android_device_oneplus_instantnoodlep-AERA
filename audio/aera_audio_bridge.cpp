@@ -9,6 +9,7 @@
  */
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -36,6 +37,10 @@ constexpr uint32_t kMagic = 0x41525041U;
 constexpr uint32_t kRate = 48000U;
 constexpr uint32_t kChannels = 2U;
 constexpr uint32_t kBits = 16U;
+constexpr unsigned int kPeriodFrames = 1024U;
+constexpr size_t kFrameBytes = kChannels * (kBits / 8U);
+constexpr size_t kPeriodBytes = kPeriodFrames * kFrameBytes;
+constexpr int kIdleTimeoutMs = 250;
 constexpr int kDefaultVolumePercent = 30;
 constexpr char kSocketName[] = "aera-browser-audio-v1";
 constexpr char kBootstrap[] = "/system/bin/aera-audio-bootstrap";
@@ -129,13 +134,13 @@ pcm* OpenPcm() {
   pcm_config config{};
   config.channels = kChannels;
   config.rate = kRate;
-  config.period_size = 1024;
+  config.period_size = kPeriodFrames;
   config.period_count = 4;
   config.format = PCM_FORMAT_S16_LE;
-  config.start_threshold = config.period_size;
+  config.start_threshold = config.period_size * 2;
   config.stop_threshold = config.period_size * config.period_count;
   config.silence_threshold = config.stop_threshold;
-  pcm* output = pcm_open(0, 0, PCM_OUT, &config);
+  pcm* output = pcm_open(0, 0, PCM_OUT | PCM_NORESTART, &config);
   if (output == nullptr || !pcm_is_ready(output)) {
     fprintf(stderr, "AERA audio: PCM output is unavailable: %s\n",
             output == nullptr ? "open failed" : pcm_get_error(output));
@@ -145,14 +150,24 @@ pcm* OpenPcm() {
   return output;
 }
 
-bool WritePcm(pcm* output, const uint8_t* data, size_t size) {
-  constexpr size_t kFrameBytes = kChannels * (kBits / 8U);
+bool WritePcm(pcm*& output, const uint8_t* data, size_t size) {
   size_t offset = 0;
+  bool restarted = false;
   while (offset < size) {
     const unsigned int frames = static_cast<unsigned int>(
         (size - offset) / kFrameBytes);
     const int written = pcm_writei(output, data + offset, frames);
     if (written <= 0) {
+      const int error = errno;
+      if (!restarted && (error == EPIPE || error == ESTRPIPE)) {
+        // Re-prepare alone leaves this Qualcomm DSP stream stuck after an XRUN.
+        fprintf(stderr, "AERA audio: reopening PCM after underrun\n");
+        pcm_close(output);
+        output = OpenPcm();
+        if (output == nullptr) return false;
+        restarted = true;
+        continue;
+      }
       fprintf(stderr, "AERA audio: PCM write failed: %s\n",
               pcm_get_error(output));
       return false;
@@ -180,23 +195,38 @@ void ServeClient(int client) {
     return;
   }
 
-  pcm* output = OpenPcm();
-  if (output == nullptr) return;
-  constexpr size_t kFrameBytes = kChannels * (kBits / 8U);
-  std::array<uint8_t, 8192 + kFrameBytes - 1> buffer{};
+  pcm* output = nullptr;
+  // Socket reads are not audio boundaries. Submit complete DSP periods only.
+  std::array<uint8_t, kPeriodBytes> buffer{};
   bool good = true;
-  size_t carry = 0;
+  size_t filled = 0;
   unsigned volume_counter = 0;
   int volume = ReadVolumePercent();
   while (good && !g_stop) {
-    const ssize_t count = read(client, buffer.data() + carry,
-                               buffer.size() - carry);
+    pollfd input{client, POLLIN, 0};
+    const int ready = poll(&input, 1, kIdleTimeoutMs);
+    if (ready < 0 && errno == EINTR) continue;
+    if (ready < 0) break;
+    if (ready == 0) {
+      if (output != nullptr) {
+        pcm_close(output);
+        output = nullptr;
+      }
+      continue;
+    }
+    if (!(input.revents & POLLIN)) break;
+    const ssize_t count = read(client, buffer.data() + filled,
+                               buffer.size() - filled);
     if (count < 0 && errno == EINTR) continue;
     if (count <= 0) break;
-    const size_t total = carry + static_cast<size_t>(count);
-    const size_t complete = total - (total % kFrameBytes);
+    filled += static_cast<size_t>(count);
+    if (filled != buffer.size()) continue;
+    if (output == nullptr) {
+      output = OpenPcm();
+      if (output == nullptr) break;
+    }
     if ((volume_counter++ % 12U) == 0) volume = ReadVolumePercent();
-    for (size_t offset = 0; offset < complete; offset += 2) {
+    for (size_t offset = 0; offset < filled; offset += 2) {
       int16_t sample = static_cast<int16_t>(
           static_cast<uint16_t>(buffer[offset]) |
           (static_cast<uint16_t>(buffer[offset + 1]) << 8));
@@ -206,11 +236,10 @@ void ServeClient(int client) {
       buffer[offset + 1] = static_cast<uint8_t>(
           static_cast<uint16_t>(sample) >> 8);
     }
-    good = WritePcm(output, buffer.data(), complete);
-    carry = total - complete;
-    if (carry) memmove(buffer.data(), buffer.data() + complete, carry);
+    good = WritePcm(output, buffer.data(), filled);
+    filled = 0;
   }
-  pcm_close(output);
+  if (output != nullptr) pcm_close(output);
 }
 }  // namespace
 

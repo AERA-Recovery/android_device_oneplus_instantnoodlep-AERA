@@ -9,6 +9,11 @@ PRODUCT_SHIPPING_API_LEVEL := 29
 
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
+# Stock Adreno 650 EGL and Kona gralloc are bundled in the recovery ramdisk.
+PRODUCT_VENDOR_PROPERTIES += \
+    ro.hardware.egl=adreno \
+    ro.hardware.gralloc=kona
+
 # Qualcomm HIDL boot control and recovery decryption helpers.
 PRODUCT_PACKAGES += \
     android.hardware.boot@1.1-impl \
