@@ -75,10 +75,6 @@ BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)
 
 # Recovery must fit the dedicated 100 MiB partition.
 BOARD_RAMDISK_USE_LZMA := true
-# Keep the complete ramdisk and use the same LZMA format with a stronger
-# compression preset. This leaves enough room for the legacy v2 kernel, DTB,
-# recovery DTBO and AVB footer without removing recovery functionality.
-override LZMA := $(DEVICE_PATH)/tools/lzma-8
 
 # A/B
 AB_OTA_UPDATER := true
