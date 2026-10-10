@@ -26,7 +26,7 @@ if [ "$AERA_BUILD_DEVICE" = "$FDEVICE" ]; then
     export LC_ALL=C
     export AERA_AB_DEVICE=1
     export AERA_PRODUCT_PREFIX=AERA
-    export AERA_BUILD_STATUS=Unofficial
+    export AERA_BUILD_STATUS=Official
     export AERA_BUILD_TYPE=Beta
     export AERA_VANILLA_BUILD=1
 
