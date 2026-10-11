@@ -18,10 +18,7 @@ if [ -z "$AERA_BUILD_DEVICE" ]; then
 fi
 
 if [ "$AERA_BUILD_DEVICE" = "$FDEVICE" ]; then
-    # Avoid leaking feature flags from a previously selected device.
-    unset AERA_ENABLE_KERNELSU_SUPPORT
-    unset AERA_ENABLE_KERNELSU_NEXT_SUPPORT
-    unset AERA_ENABLE_SUKISU_SUPPORT
+    export AERA_ENABLE_ROOT_MANAGER=0
 
     export LC_ALL=C
     export AERA_AB_DEVICE=1
