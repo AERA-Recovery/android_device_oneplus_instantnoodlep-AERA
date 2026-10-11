@@ -139,10 +139,9 @@ AERA_UI_ADAPTIVE_RESOLUTION := true
 AERA_EXCLUDE_DEFAULT_USB_INIT := true
 AERA_EXCLUDE_APEX := true
 AERA_INPUT_BLACKLIST := "hbtp_vm"
-# Load the stock Kona audio stack while leaving QCA6390 under the dedicated
-# post-decrypt WLAN loader. libmodprobe resolves the dependency order from the
-# installed vendor image, so these modules stay matched to the active ROM.
-AERA_LOAD_VENDOR_MODULES := "audio_apr.ko audio_q6_pdr.ko audio_q6_notifier.ko audio_adsp_loader.ko audio_q6.ko audio_usf.ko audio_pinctrl_wcd.ko audio_pinctrl_lpi.ko audio_swr.ko audio_wcd_core.ko audio_swr_ctrl.ko audio_wsa881x.ko audio_platform.ko audio_hdmi.ko audio_stub.ko audio_wcd9xxx.ko audio_mbhc.ko audio_wcd938x.ko audio_wcd938x_slave.ko audio_bolero_cdc.ko audio_wsa_macro.ko audio_va_macro.ko audio_rx_macro.ko audio_tx_macro.ko audio_native.ko audio_machine_kona.ko audio_snd_event.ko audio_extend.ko audio_max98937.ko audio_tfa98xx-v6.ko audio_ak4376.ko aera_post_decrypt_stage_only.ko"
+# Keep the common post-decrypt trigger, but let the DT's dedicated loaders
+# load bundled WLAN/audio modules matched to the fixed OxygenOS kernel.
+AERA_LOAD_VENDOR_MODULES := "aera_post_decrypt_stage_only.ko"
 AERA_LOAD_VENDOR_MODULES_EXCLUDE_GKI := true
 AERA_POST_DECRYPT_MODULES := "aera_post_decrypt_stage_only.ko"
 AERA_NO_BIND_SYSTEM := true

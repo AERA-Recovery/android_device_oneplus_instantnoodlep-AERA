@@ -1,18 +1,23 @@
 #!/system/bin/sh
 
 module_name=qca_cld3_qca6390.ko
-module=/tmp/vendor/lib/modules/$module_name
-stage_dir=/tmp/post_decrypt_modules
+module=/system/lib/modules/kona/$module_name
+ready=/tmp/aera-wlan-prepared
 
 if [ "$1" = "load" ]; then
-    while [ ! -f "$stage_dir/$module_name" ]; do
+    if [ ! -r "$module" ]; then
+        echo "AERA WLAN: bundled module is missing: $module" >&2
+        exit 1
+    fi
+
+    while [ ! -f "$ready" ]; do
         sleep 1
     done
 
     if ! grep -q '^wlan ' /proc/modules; then
         # Match the stock boot order: register the host driver first, then
         # let CNSS start calibration after module initialization has settled.
-        insmod "$stage_dir/$module_name" &
+        insmod "$module" &
         module_pid=$!
 
         # The driver delays registration internally. Starting calibration on
@@ -31,18 +36,7 @@ if [ "$1" = "load" ]; then
     exit 0
 fi
 
-# The regular vendor-module pass mirrors the stock module into /tmp without
-# probing it. Wait until AERA has completed its sentinel staging pass, then
-# preserve the empty list so the device-specific loader controls probe order.
-
-while [ ! -f "$module" ] || [ ! -f "$stage_dir/modules.load.postdecrypt" ]; do
-    sleep 1
-done
-
-mkdir -p "$stage_dir"
-cp -f "$module" "$stage_dir/$module_name"
-chmod 0700 "$stage_dir/$module_name"
-: > "$stage_dir/modules.load.postdecrypt"
+rm -f "$ready"
 
 # Device-encrypted vendor data becomes available before credential unlock.
 # Wait outside init's main thread so WLAN preparation never delays recovery.
@@ -63,3 +57,6 @@ chmod 0770 "$runtime_socket_dir"
 if ! grep -q " $socket_dir " /proc/mounts; then
     mount -o bind "$runtime_socket_dir" "$socket_dir" || exit 1
 fi
+
+# The post-decrypt loader must not start CNSS before its socket bind is ready.
+: > "$ready"

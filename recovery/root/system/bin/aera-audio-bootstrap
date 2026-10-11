@@ -24,6 +24,8 @@ if [ "$(getprop sys.aera.audio.ready)" = "1" ] && [ -e /dev/snd/controlC0 ]; the
     exit 0
 fi
 
+[ "$(getprop post.decrypt.modules)" = "true" ] || exit 0
+
 lock=/tmp/aera-audio-bootstrap.lock
 if ! mkdir "${lock}" 2>/dev/null; then
     attempt=0
@@ -36,6 +38,12 @@ if ! mkdir "${lock}" 2>/dev/null; then
     exit 0
 fi
 trap 'rmdir "${lock}" 2>/dev/null' EXIT
+
+# These modules come from the same OxygenOS build as the bundled kernel.
+# Use its dependency metadata instead of modules from the installed ROM.
+modprobe -d /system/lib/modules/kona \
+    --all=/system/lib/modules/kona/modules.load.audio || \
+    fail "could not load the bundled Kona audio modules"
 
 if [ ! -e /dev/snd/controlC0 ]; then
     if [ "$(getprop init.svc.aera-pd-mapper)" != "running" ]; then

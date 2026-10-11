@@ -28,17 +28,10 @@
 import /init.recovery.qcom_decrypt.rc
 import /init.recovery.wifi.rc
 	
-service hal_cryptoeng_oplus /system/bin/hw/vendor.oplus.hardware.cryptoeng@1.0-service
+service hal_cryptoeng_oplus /system/bin/vendor.oplus.hardware.cryptoeng@1.0-service
     class late_start
     user system
     group system input sdcard_rw sdcard_r
-    seclabel u:r:recovery:s0
-
-service unified-script /system/bin/unified-script.sh
-    user root
-    group root
-    disabled
-    oneshot
     seclabel u:r:recovery:s0
 
 service make-fake-partitions-service /system/bin/make-fake-partitions-service.sh reserve
@@ -103,9 +96,6 @@ on property:post.decrypt.modules=true
     start aera-wlan-load
     start aera-audio-prepare
 
-on property:twrp.modules.loaded=true
-    start aera-audio-prepare
-
 on property:sys.powerctl=*
     stop cnss-daemon
     rm /data/vendor/wifi/sockets/cnss_user_server
@@ -126,8 +116,6 @@ on boot
     # Kona's bootctrl implementation exposes HIDL 1.1. Starting the matching
     # wrapper here prevents recovery from waiting on the incompatible 1.2 HAL.
     start boot-hal-1-1
-    chmod 0777 /system/bin/unified-script.sh
-    start unified-script
     chmod 0777 /system/bin/make-fake-partitions-service.sh
     start make-fake-partitions-service
 

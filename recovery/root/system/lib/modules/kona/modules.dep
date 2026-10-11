@@ -1,0 +1,32 @@
+audio_max98937.ko: audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_adsp_loader.ko: audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_stub.ko:
+audio_tx_macro.ko: audio_swr_ctrl.ko audio_swr.ko audio_wcd_core.ko audio_bolero_cdc.ko audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_wcd9xxx.ko: audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_q6_notifier.ko: audio_q6_pdr.ko
+audio_wcd_core.ko:
+audio_ak4376.ko:
+audio_snd_event.ko:
+audio_machine_kona.ko: audio_wsa_macro.ko audio_wsa881x.ko audio_wcd938x.ko audio_wcd9xxx.ko audio_mbhc.ko audio_swr_ctrl.ko audio_swr.ko audio_wcd_core.ko audio_bolero_cdc.ko audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_rx_macro.ko: audio_swr_ctrl.ko audio_swr.ko audio_wcd_core.ko audio_bolero_cdc.ko audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_wcd938x.ko: audio_wcd9xxx.ko audio_mbhc.ko audio_swr.ko audio_wcd_core.ko audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_swr_ctrl.ko: audio_swr.ko audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_tfa98xx-v6.ko: audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_va_macro.ko: audio_swr_ctrl.ko audio_swr.ko audio_wcd_core.ko audio_bolero_cdc.ko audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_usf.ko: audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_bolero_cdc.ko: audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_wsa_macro.ko: audio_swr_ctrl.ko audio_swr.ko audio_wcd_core.ko audio_bolero_cdc.ko audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_wcd938x_slave.ko: audio_swr.ko
+audio_apr.ko: audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_native.ko: audio_platform.ko audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_platform.ko: audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_q6_pdr.ko:
+audio_hdmi.ko:
+audio_q6.ko: audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_swr.ko:
+qca_cld3_qca6390.ko:
+audio_extend.ko:
+audio_pinctrl_lpi.ko: audio_q6.ko audio_apr.ko audio_q6_notifier.ko audio_q6_pdr.ko audio_snd_event.ko
+audio_wsa881x.ko: audio_swr.ko audio_wcd_core.ko
+audio_mbhc.ko:
+audio_pinctrl_wcd.ko:
