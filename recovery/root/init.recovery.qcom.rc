@@ -48,19 +48,11 @@ service vendor.qrtr-ns /system/bin/qrtr-ns -f
     disabled
     seclabel u:r:recovery:s0
 
-service cnss-daemon /vendor/bin/cnss-daemon -n -l
+service cnss-daemon /system/bin/sh /system/bin/aera-wlan-prepare.sh cnss
     class core
     user root
     group root system inet net_admin wifi
     disabled
-    seclabel u:r:recovery:s0
-
-service aera-wlan-prepare /system/bin/sh /system/bin/aera-wlan-prepare.sh
-    class core
-    user root
-    group root
-    disabled
-    oneshot
     seclabel u:r:recovery:s0
 
 service aera-wlan-load /system/bin/sh /system/bin/aera-wlan-prepare.sh load
@@ -104,7 +96,6 @@ on property:sys.powerctl=*
 on init
     write /sys/class/backlight/panel0-backlight/brightness 420
     start vendor.qrtr-ns
-    start aera-wlan-prepare
     setprop prepdecrypt.setpatch true
     setprop sys.usb.config adb
     # Create location for fs_mgr to store abbreviated output from filesystem
