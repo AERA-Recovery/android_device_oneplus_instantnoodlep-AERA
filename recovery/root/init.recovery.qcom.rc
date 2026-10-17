@@ -104,6 +104,8 @@ on init
 
 on boot
     setprop sys.usb.config adb
+    # Fastbootd waits for the declared Health HAL before opening USB.
+    start health-hal-2-1
     # Kona's bootctrl implementation exposes HIDL 1.1. Starting the matching
     # wrapper here prevents recovery from waiting on the incompatible 1.2 HAL.
     start boot-hal-1-1
