@@ -19,6 +19,7 @@ fi
 
 if [ "$AERA_BUILD_DEVICE" = "$FDEVICE" ]; then
     export AERA_ENABLE_ROOT_MANAGER=0
+    export AERA_ENABLE_MOBILE_DATA=1
 
     export LC_ALL=C
     export AERA_AB_DEVICE=1

@@ -40,4 +40,8 @@ PRODUCT_COPY_FILES += \
 
 PRODUCT_SOONG_NAMESPACES += $(LOCAL_PATH)
 
+ifeq ($(AERA_ENABLE_MOBILE_DATA),1)
+PRODUCT_PACKAGES += aera-cellular-provider
+endif
+
 $(call inherit-product, $(LOCAL_PATH)/aera_instantnoodlep.mk)
