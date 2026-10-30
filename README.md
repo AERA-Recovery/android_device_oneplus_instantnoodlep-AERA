@@ -3,13 +3,15 @@
 Device: OnePlus 8 Pro (`instantnoodlep`, IN2020/IN2021/IN2023/IN2025)
 
 This device tree is based on TeamWin's Android 13 OnePlus 8/8 Pro recovery
-tree and targets the OnePlus 8 Pro only. It uses the compressed OxygenOS 13
-F.13 kernel, DTB/DTBO, Keymaster, Gatekeeper, CryptoEng, vibrator, and
+tree and targets the OnePlus 8 Pro only. It uses a compressed kernel rebuilt from OnePlus OxygenOS 13 sources,
+plus the OxygenOS 13 F.13 DTB/DTBO, Keymaster, Gatekeeper, CryptoEng, vibrator, and
 boot-control components with AERA's device-specific graphics, WLAN and audio
 integration. The product keeps the `instantnoodlep` codename; legacy unified
 model-property overrides are not used. WLAN and audio kernel modules are
-bundled from the same OxygenOS build as the kernel, rather than taken from
-the installed ROM. Their device-specific loaders run after decryption.
+bundled from OxygenOS 13 F.13 rather than taken from the installed ROM.
+The rebuilt kernel enables CONFIG_UNICODE for F2FS casefold userdata while
+preserving the bundled modules' symbol versions and trusted signing certificate.
+Their device-specific loaders run after decryption.
 
 ## Build
 

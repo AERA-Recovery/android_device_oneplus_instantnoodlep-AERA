@@ -38,7 +38,7 @@ TARGET_BOARD_PLATFORM_GPU := qcom-adreno650
 TARGET_USES_HARDWARE_QCOM_BOOTCTRL := true
 QCOM_BOARD_PLATFORMS += kona
 
-# Kernel (OxygenOS 13 F.13 prebuilt)
+# Kernel (rebuilt OxygenOS 13, Unicode/casefold support; stock module ABI)
 TARGET_KERNEL_ARCH := arm64
 TARGET_KERNEL_HEADER_ARCH := arm64
 BOARD_KERNEL_IMAGE_NAME := Image.gz
