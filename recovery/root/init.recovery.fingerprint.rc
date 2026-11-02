@@ -1,0 +1,38 @@
+# Goodix optical HIDL stack. Never start in the data-decryption critical path.
+service aera-fingerprint-prepare /system/bin/sh /vendor/bin/aera-fingerprint-prepare
+    class hal
+    disabled
+    oneshot
+    user root
+    group root
+    seclabel u:r:recovery:s0
+
+service aera-fingerprint-vendor /vendor/bin/hw/vendor.oplus.hardware.biometrics.fingerprint@2.1-service
+    class hal
+    disabled
+    user system
+    group system input uhid
+    seclabel u:r:recovery:s0
+    setenv LD_LIBRARY_PATH /vendor/lib64:/system/lib64:/vendor/odm/lib64
+
+service aera-fingerprint-hal /vendor/bin/hw/android.hardware.biometrics.fingerprint@2.3-service.oplus
+    class hal
+    disabled
+    user system
+    group system input
+    seclabel u:r:recovery:s0
+    setenv LD_LIBRARY_PATH /vendor/lib64:/system/lib64:/vendor/odm/lib64
+
+on property:vendor.aera.fingerprint.start=1
+    setprop vendor.aera.fingerprint.ready 0
+    start aera-fingerprint-prepare
+
+on property:vendor.aera.fingerprint.ready=1 && property:vendor.aera.fingerprint.start=1
+    start aera-fingerprint-vendor
+    start aera-fingerprint-hal
+
+on property:vendor.aera.fingerprint.start=0
+    setprop vendor.aera.fingerprint.ready 0
+    stop aera-fingerprint-prepare
+    stop aera-fingerprint-hal
+    stop aera-fingerprint-vendor

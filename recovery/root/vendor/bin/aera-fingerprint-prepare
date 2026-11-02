@@ -1,0 +1,63 @@
+#!/system/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+PATH=/system/bin:/sbin
+export PATH
+requested() { [ "$(getprop vendor.aera.fingerprint.start)" = 1 ]; }
+fail() { echo "AERA fingerprint: $*" >&2; exit 1; }
+requested || exit 0
+[ "$(getprop post.decrypt.modules)" = true ] || fail "post-decryption setup is not ready"
+slot=$(getprop ro.boot.slot_suffix)
+case "$slot" in _a|_b) ;; *) fail "active slot is not available" ;; esac
+stock=/mnt/aera-fingerprint/odm
+mounted() { awk -v p="$1" '$5 == p { found=1 } END { exit !found }' /proc/self/mountinfo; }
+mkdir -p "$stock" /odm/vendor/firmware /mnt/vendor/persist || exit 1
+# Init launches this script with a restrictive umask. The system-owned HAL
+# must be able to traverse the ramdisk directories holding the firmware binds.
+chmod 0755 /mnt/aera-fingerprint /odm/vendor /odm/vendor/firmware || exit 1
+if ! mounted "$stock"; then
+    source=/dev/block/mapper/odm${slot}
+    [ -b "$source" ] || fail "active ODM is not mapped"
+    mount -t erofs -o ro "$source" "$stock" 2>/dev/null || \
+        mount -t ext4 -o ro,noload "$source" "$stock" || fail "cannot mount installed ODM"
+fi
+mount -o private none "$stock" || exit 1
+[ -f "$stock/vendor/firmware/gfp9608.mdt" ] || fail "installed Goodix firmware is missing"
+for source in "$stock"/vendor/firmware/gfp9608.*; do
+    requested || exit 0
+    [ -f "$source" ] || continue
+    target=/odm/vendor/firmware/${source##*/}
+    [ -e "$target" ] || touch "$target" || exit 1
+    if ! mounted "$target"; then
+        mount -o bind "$source" "$target" || exit 1
+        mount -o remount,bind,ro "$target" || exit 1
+        mount -o private none "$target" || exit 1
+    fi
+done
+if ! mounted /mnt/vendor/persist; then
+    mount -t ext4 -o ro,noload,noatime,nosuid,nodev \
+        /dev/block/bootdevice/by-name/persist /mnt/vendor/persist || fail "cannot read calibration"
+fi
+# The decryption path normally stops the filesystem listener after unlocking.
+# Existing fingerprint enrollment still needs it, including on unencrypted data.
+start qseecomd
+start keymaster-4-0-qti
+attempt=0
+while [ "$(getprop init.svc.qseecomd)" != running ] || \
+      { [ "$(getprop sys.listeners.registered)" != true ] && \
+        [ "$(getprop vendor.sys.listeners.registered)" != true ]; }; do
+    requested || exit 0
+    attempt=$((attempt + 1))
+    [ "$attempt" -lt 25 ] || fail "QSEE filesystem listener did not start"
+    sleep 0.1
+done
+chown system:system /dev/goodix_fp /dev/oplus_display || exit 1
+chmod 0660 /dev/goodix_fp /dev/oplus_display || exit 1
+# Geometry from the installed Android overlay, in physical display coordinates.
+setprop vendor.aera.fingerprint.sensor_x 726
+setprop vendor.aera.fingerprint.sensor_y 2549
+setprop vendor.aera.fingerprint.sensor_radius 151
+setprop vendor.aera.fingerprint.display_width 1440
+setprop vendor.aera.fingerprint.display_height 3168
+setprop vendor.aera.fingerprint.optical_illumination 1
+setprop vendor.oplus.biometrics.fingerprint.boot_completed 1
+requested && setprop vendor.aera.fingerprint.ready 1

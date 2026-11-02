@@ -187,3 +187,30 @@ AERA_EXTRA_LANGUAGES := true
 AERA_HAS_EDL_MODE := true
 AERA_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID := true
 TARGET_SYSTEM_PROP += $(DEVICE_PATH)/system.prop
+
+# Existing Android owner fingerprints authenticate AERA's own screen lock.
+AERA_SUPPORT_FINGERPRINT := 1
+AERA_FINGERPRINT_BACKEND := hidl
+
+# Device-root overlays are copied after the generic image hook.
+ifneq ($(AERA_SUPPORT_FINGERPRINT),1)
+BOARD_RECOVERY_IMAGE_PREPARE += rm -f \
+    $(TARGET_RECOVERY_ROOT_OUT)/system/bin/aera-fingerprint \
+    $(TARGET_RECOVERY_ROOT_OUT)/system/bin/aera-fingerprint-hidl \
+    $(TARGET_RECOVERY_ROOT_OUT)/init.recovery.fingerprint.rc \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/bin/aera-fingerprint-prepare \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/bin/hw/vendor.oplus.hardware.biometrics.fingerprint@2.1-service \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/bin/hw/android.hardware.biometrics.fingerprint@2.3-service.oplus \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/etc/vintf/manifest/aera.fingerprint.xml \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/odm/lib64/hw/fingerprint.goodix9608_G5.default.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/libgf_hal_G5_oplus.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/libshims_fingerprint.oplus.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/libosenseaidlhalclient.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/vendor.oplus.hardware.commondcs-V1-ndk_platform.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/vendor.oplus.hardware.osense.client-V1-ndk_platform.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/vendor.oplus.hardware.performance-V1-ndk_platform.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/vendor.oplus.hardware.biometrics.fingerprint@2.1.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/android.hardware.biometrics.fingerprint@2.1.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/android.hardware.biometrics.fingerprint@2.2.so \
+    $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/android.hardware.biometrics.fingerprint@2.3.so
+endif

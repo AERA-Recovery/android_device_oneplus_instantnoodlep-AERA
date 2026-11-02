@@ -27,6 +27,7 @@
 
 import /init.recovery.qcom_decrypt.rc
 import /init.recovery.wifi.rc
+import /init.recovery.fingerprint.rc
 	
 service hal_cryptoeng_oplus /system/bin/vendor.oplus.hardware.cryptoeng@1.0-service
     class late_start
