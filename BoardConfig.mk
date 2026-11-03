@@ -214,3 +214,6 @@ BOARD_RECOVERY_IMAGE_PREPARE += rm -f \
     $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/android.hardware.biometrics.fingerprint@2.2.so \
     $(TARGET_RECOVERY_ROOT_OUT)/vendor/lib64/android.hardware.biometrics.fingerprint@2.3.so
 endif
+
+# Expand the XZ-compressed runtime in RAM during early init.
+AERA_USE_EXTREME_COMPRESSION := 1
